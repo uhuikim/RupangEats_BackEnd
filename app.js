@@ -1,7 +1,6 @@
 const express = require("express");
 const logger = require("morgan");
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
 
 // db 관련
 const db = require("./models");
@@ -19,6 +18,9 @@ class App {
     // 정적 디렉토리 추가
     this.setStatic();
 
+    // 로컬 변수
+    this.setLocals();
+
     // 라우팅
     this.getRouting();
 
@@ -35,7 +37,7 @@ class App {
       .authenticate()
       .then(() => {
         console.log("Connection has been established successfully.");
-        // return db.sequelize.sync();
+        return db.sequelize.sync();
       })
       .then(() => {
         console.log("DB Sync complete.");
@@ -50,12 +52,20 @@ class App {
     this.app.use(logger("dev"));
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
-    this.app.use(cookieParser());
   }
 
   setStatic() {
     this.app.use("/uploads", express.static("uploads"));
     this.app.use("/static", express.static("static"));
+  }
+
+  setLocals() {
+    // 템플릿 변수
+    this.app.use((req, res, next) => {
+      this.app.locals.isLogin = true;
+      this.app.locals.req_path = req.path;
+      next();
+    });
   }
 
   getRouting() {
@@ -69,9 +79,9 @@ class App {
   }
 
   errorHandler() {
-    // this.app.use( (err, req, res,  _ ) => {
-    //     res.status(500).render('common/500.html')
-    // });
+    this.app.use((err, req, res, _) => {
+      res.status(500).render("common/500.html");
+    });
   }
 }
 
